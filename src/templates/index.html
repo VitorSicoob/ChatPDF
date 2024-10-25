@@ -1,21 +1,132 @@
 <!doctype html>
 <html>
-
 <head>
     <title>ChatPDF</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
-            background-color: cadetblue;
+            background-color: #003641;
+            text-align: center;
+            font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        header {
+            background-color: #00AE9D;
+            color: rgb(223, 223, 223);
+            width: 100%;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            position: fixed;
+            top: 0;
+            left: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+        }
+        header img {
+            width: 50px;
+            margin-right: 15px;
+        }
+
+        header h1 {
+            font-size: 20px;
+        }
+        .main {
+            display: flex;
+            padding: 50px;
+            justify-content: space-around;
+            width: 100%;
+            margin-top: 250px;
+        }
+        .esquerda {
+            color: #f0f8ff;
+            text-align: left;
+            width: 40%;
+        }
+        .esquerda h1 {
+            margin-bottom: 40px;
+        }
+        .esquerda p {
+            color: #9d9d9d;
+        }
+        .upload-container {
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 40px;
+            width: 500px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: left;
+        }
+        .upload-container h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 15px;
+            color: #7a7a7a;
+            font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+        }
+        .upload-container p {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .input1, .input2 {
+            width: 80%;
+            padding: 10px;
+            border: 2px solid #00AE9D;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .input1 {
+            background-color: #f0f8ff;
+            color: #333;
+        }
+        .input2 {
+            background-color: #00AE9D;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .input2:hover {
+            background-color: #00887a;
         }
     </style>
 </head>
-
 <body>
-    <h1>Faça Upload dos seus PDFs</h1>
-    <form action="/" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" multiple>
-        <input type="submit" value="Upload">
-    </form>
+    <header>
+        <h1>Equipe RPA - Sicoob Seguros</h1>
+    </header>
+    <div class="main">
+        <div class="esquerda">
+            <h1>ChatBot PDF</h1>
+            <p>Este projeto permite que você faça upload de arquivos PDF, busque 
+                e interaja com o conteúdo dos documentos usando um modelo de chatbot 
+                IA avançado. Depois disso, enviamos as conversas para um banco de dados 
+                local e damos uma opção de para tranferir os dados para um arquivo excel
+                e depois envia-lo para email. Basta fazer o upload dos seus arquivos e 
+                fazer suas perguntas no chat. </p>
+        </div>
+        <div class="upload-container">
+            <h1>Faça upload dos seus PDFs</h1>
+            <form action="/" method="post" enctype="multipart/form-data">
+                <input class="input1" type="file" name="file" multiple>
+                <input class="input2" type="submit" value="Upload">
+            </form>
+        </div>
+    </div>
 </body>
-
 </html>

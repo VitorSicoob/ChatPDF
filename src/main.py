@@ -1,6 +1,8 @@
 import os
+import sqlite3
 from dotenv import load_dotenv
-from flask import Flask, request, render_template, redirect, url_for
+from flask import Flask, request, render_template, redirect, url_for, send_from_directory, session
+from flask_session import Session
 from langchain_community.document_loaders import UnstructuredPDFLoader
 from langchain_text_splitters.character import CharacterTextSplitter
 from langchain_community.vectorstores import FAISS
@@ -9,11 +11,39 @@ from langchain_groq import ChatGroq
 from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationalRetrievalChain
 
+# Carregando as variáveis de ambiente
 load_dotenv()
 groq_api_key = os.getenv('GROQ_API_KEY')
 
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = 'src/img'
+app.config['SECRET_KEY'] = 'supersecretkey'
+app.config['SESSION_TYPE'] = 'filesystem'
+Session(app)
+
 working_dir = os.path.dirname(os.path.abspath(__file__))
+db_path = os.path.join(working_dir, 'chat_data.db')
+
+# Função para inicializar o banco de dados
+def init_db():
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS chat_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_input TEXT NOT NULL,
+            assistant_response TEXT NOT NULL
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+# Inicializando o banco de dados
+init_db()
+
+@app.route('/src/img/<path:filename>')
+def send_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 def load_documents(file_paths):
     documents = []
@@ -33,7 +63,7 @@ def create_chain(vectorstore):
     llm = ChatGroq(
         model="llama-3.1-70b-versatile",
         temperature=0,
-        api_key=groq_api_key  # Passando a chave API aqui
+        api_key=groq_api_key  # passando a chave API aqui
     )
     retriever = vectorstore.as_retriever()
     memory = ConversationBufferMemory(llm=llm, output_key="answer", memory_key="chat_history", return_messages=True)
@@ -50,24 +80,39 @@ def index():
                 file_path = f"{working_dir}/{file.filename}"
                 file.save(file_path)
                 file_paths.append(file_path)
-            if 'vectorstore' not in app.config:
-                documents = load_documents(file_paths)
-                app.config['vectorstore'] = setup_vectorstore(documents)
-            if 'conversation_chain' not in app.config:
-                app.config['conversation_chain'] = create_chain(app.config['vectorstore'])
+            documents = load_documents(file_paths)
+            vectorstore = setup_vectorstore(documents)
+            app.config['vectorstore'] = vectorstore
+            app.config['conversation_chain'] = create_chain(vectorstore)
+            session['chat_history'] = []  # inicializa o histórico de conversas na sessão
             return redirect(url_for('chat'))
     return render_template('index.html')
 
 @app.route('/chat', methods=['GET', 'POST'])
 def chat():
-    chat_history = []
+    if 'conversation_chain' not in app.config:
+        return redirect(url_for('index'))
+
+    if 'chat_history' not in session:
+        session['chat_history'] = []
+
     if request.method == 'POST':
         user_input = request.form['user_input']
-        chat_history.append({'role': 'user', 'content': user_input})
+        session['chat_history'].append({'role': 'voce', 'content': user_input})
         response = app.config['conversation_chain']({'question': user_input})
         assistant_response = response['answer']
-        chat_history.append({'role': 'assistant', 'content': assistant_response})
-    return render_template('chat.html', chat_history=chat_history)
+        session['chat_history'].append({'role': 'assistente', 'content': assistant_response})
+
+        # salvando no banco de dados
+        conn = sqlite3.connect(db_path)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO chat_history (user_input, assistant_response) VALUES (?, ?)
+        ''', (user_input, assistant_response))
+        conn.commit()
+        conn.close()
+
+    return render_template('chat.html', chat_history=session['chat_history'])
 
 if __name__ == '__main__':
     app.run(debug=True)
