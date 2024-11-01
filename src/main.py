@@ -54,10 +54,11 @@ def load_documents(file_paths):
 
 def setup_vectorstore(documents):
     embeddings = HuggingFaceEmbeddings()
-    text_splitter = CharacterTextSplitter(separator="\n", chunk_size=1000, chunk_overlap=200)
+    text_splitter = CharacterTextSplitter(separator="\n", chunk_size=3000, chunk_overlap=50)
     doc_chunks = text_splitter.split_documents(documents)
     vectorstore = FAISS.from_documents(doc_chunks, embeddings)
     return vectorstore
+
 
 def create_chain(vectorstore):
     llm = ChatGroq(
@@ -103,12 +104,20 @@ def chat():
         assistant_response = response['answer']
         session['chat_history'].append({'role': 'assistente', 'content': assistant_response})
 
-        # salvando no banco de dados
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         cursor.execute('''
             INSERT INTO chat_history (user_input, assistant_response) VALUES (?, ?)
         ''', (user_input, assistant_response))
+
+        # consulta última linha 
+        cursor.execute("SELECT assistant_response FROM chat_history ORDER BY id DESC LIMIT 1")
+        ultima_linha = cursor.fetchone()
+
+        if ultima_linha:
+            print("Última linha da coluna: ", ultima_linha[0])
+        else:
+            print("Nenhuma linha encontrada")
         conn.commit()
         conn.close()
 
